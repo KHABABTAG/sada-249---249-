@@ -1,0 +1,7 @@
+{
+  "name": "Sada 249 (صدى 249)",
+  "description": "A secure, moderated digital archive designed to document the human experiences of the war in Sudan. It provides a safe platform for survivors to submit their personal testimonies directly and securely.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
