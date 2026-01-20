@@ -1,9 +1,18 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sada 249 (صدى 249)</title>
+    <title>Sada 249 | صدى 249 - الأرشيف الرقمي لشهادات الحرب في السودان</title>
+    <meta name="description" content="منصة آمنة ومستقلة لتوثيق التجارب الإنسانية وشهادات الناجين من الحرب في السودان." />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Sada 249 | صدى 249" />
+    <meta property="og:description" content="وثق تجربتك، صوتك هو التاريخ. أرشيف إنساني لشهادات الحرب في السودان." />
+    
+    <!-- Using Tailwind CDN for simplicity in this setup, though local installation is recommended for production -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,24 +20,37 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
+        scroll-behavior: smooth;
       }
       [dir="rtl"] body {
         font-family: 'Cairo', sans-serif;
+      }
+      .fade-enter {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      .fade-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 300ms, transform 300ms;
       }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
+  <body class="bg-slate-50 selection:bg-sky-100 selection:text-sky-900">
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <!-- Crucial for Vite: Pointing to the entry file -->
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

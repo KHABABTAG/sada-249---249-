@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { RecordIcon } from './icons/RecordIcon';
@@ -5,27 +6,27 @@ import { StopIcon } from './icons/StopIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { ImageIcon } from './icons/ImageIcon';
 
-type RecordingStatus = 'idle' | 'recording' | 'stopped';
+interface SubmissionFormProps {
+  onAdd: (testimony: any) => void;
+}
 
-const SubmissionForm: React.FC = () => {
+const SubmissionForm: React.FC<SubmissionFormProps> = ({ onAdd }) => {
   const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [event, setEvent] = useState('');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
-  const [testimony, setTestimony] = useState('');
+  const [testimonyText, setTestimonyText] = useState('');
   const [publishAnonymously, setPublishAnonymously] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle');
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'stopped'>('idle');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioFileInputRef = useRef<HTMLInputElement>(null);
-
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const startRecording = useCallback(async () => {
@@ -33,177 +34,134 @@ const SubmissionForm: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
+      mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioUrl(audioUrl);
-        setAudioFile(new File([audioBlob], "recorded_testimony.wav"));
-        stream.getTracks().forEach(track => track.stop()); // Stop microphone access
+        setAudioUrl(URL.createObjectURL(audioBlob));
+        stream.getTracks().forEach(track => track.stop());
       };
-
       mediaRecorderRef.current.start();
       setRecordingStatus('recording');
-      setAudioUrl(null);
-      setAudioFile(null);
     } catch (err) {
-      console.error("Error accessing microphone:", err);
-      alert(t('microphoneError'));
+      alert("Microphone access denied.");
     }
-  }, [t]);
+  }, []);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && recordingStatus === 'recording') {
-      mediaRecorderRef.current.stop();
-      setRecordingStatus('stopped');
-    }
-  }, [recordingStatus]);
-
-  const handleAudioUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setAudioFile(file);
-      setAudioUrl(URL.createObjectURL(file));
-      setRecordingStatus('idle');
-    }
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecordingStatus('stopped');
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImageUrl(URL.createObjectURL(file));
-    }
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setImageUrl(URL.createObjectURL(file));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!consent) {
-        alert(t('consentRequired'));
-        return;
-    }
-    const formData = {
-        title,
+    if (!consent) return;
+    
+    setIsSubmitting(true);
+    
+    setTimeout(() => {
+      onAdd({
+        title: title || "Untitled Testimony",
         event,
         date,
         location,
-        testimony,
-        audioFile,
-        imageFile,
-        publishAnonymously,
-        consent,
-    };
-    console.log("Form Submitted:", formData);
-    alert(t('submissionSuccess'));
-    // Reset form
-    setTitle('');
-    setEvent('');
-    setDate('');
-    setLocation('');
-    setTestimony('');
-    setPublishAnonymously(false);
-    setConsent(false);
-    setAudioFile(null);
-    setAudioUrl(null);
-    setRecordingStatus('idle');
-    setImageFile(null);
-    setImageUrl(null);
+        writtenText: testimonyText,
+        author: publishAnonymously ? t('status_anonymous') : "Public Submitter",
+        imageUrl: imageUrl || undefined,
+        audioUrl: audioUrl || undefined,
+      });
+      
+      setIsSubmitting(false);
+      alert(t('submissionSuccess'));
+      
+      setTitle(''); setEvent(''); setDate(''); setLocation(''); setTestimonyText('');
+      setConsent(false); setAudioUrl(null); setImageUrl(null); setRecordingStatus('idle');
+    }, 1500);
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+    <div className="max-w-3xl mx-auto bg-white p-5 sm:p-10 rounded-3xl shadow-sm border border-slate-100">
       <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('formTitle')}</h2>
-        <p className="text-slate-600 mt-2">{t('formSubtitle')}</p>
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">{t('formTitle')}</h2>
+        <div className="h-1 w-16 bg-sky-500 mx-auto rounded-full mb-4"></div>
+        <p className="text-slate-500 text-sm sm:text-base">{t('formSubtitle')}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">{t('titleLabel')}</label>
-          <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('titlePlaceholder')} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"/>
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+          <div className="md:col-span-2">
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('titleLabel')}</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-4 py-4 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all bg-slate-50 text-slate-900 font-bold" />
+          </div>
+          <div>
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('eventLabel')}</label>
+            <input type="text" required value={event} onChange={e => setEvent(e.target.value)} className="w-full px-4 py-4 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all bg-slate-50 text-slate-900 font-bold" />
+          </div>
+          <div>
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('locationLabel')}</label>
+            <input type="text" required value={location} onChange={e => setLocation(e.target.value)} className="w-full px-4 py-4 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all bg-slate-50 text-slate-900 font-bold" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('dateLabel')}</label>
+            <input type="date" required value={date} onChange={e => setDate(e.target.value)} className="w-full px-4 py-4 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all bg-slate-50 text-slate-900 font-bold" />
+          </div>
         </div>
 
         <div>
-          <label htmlFor="event" className="block text-sm font-medium text-slate-700 mb-1">{t('eventLabel')}</label>
-          <input type="text" id="event" value={event} onChange={(e) => setEvent(e.target.value)} placeholder={t('eventPlaceholder')} required className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"/>
+          <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('writtenLabel')}</label>
+          <textarea required value={testimonyText} onChange={e => setTestimonyText(e.target.value)} rows={6} className="w-full px-4 py-4 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all bg-slate-50 resize-none text-slate-900 font-medium" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label htmlFor="date" className="block text-sm font-medium text-slate-700 mb-1">{t('dateLabel')}</label>
-                <input type="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} required className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"/>
-            </div>
-            <div>
-                <label htmlFor="location" className="block text-sm font-medium text-slate-700 mb-1">{t('locationLabel')}</label>
-                <input type="text" id="location" value={location} onChange={(e) => setLocation(e.target.value)} required placeholder={t('locationPlaceholder')} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"/>
-            </div>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-5 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><ImageIcon /> {t('imageLabel')}</h3>
+            <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full py-3 px-4 bg-white border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
+              {imageUrl ? "تغيير الصورة" : "رفع صورة"}
+            </button>
+            <input type="file" ref={imageInputRef} hidden accept="image/*" onChange={handleImageUpload} />
+            {imageUrl && <img src={imageUrl} className="mt-4 h-32 w-full object-cover rounded-xl border border-white shadow-md" />}
+          </div>
 
-        <div>
-          <label htmlFor="testimony" className="block text-sm font-medium text-slate-700 mb-1">{t('writtenLabel')}</label>
-          <textarea id="testimony" value={testimony} onChange={(e) => setTestimony(e.target.value)} rows={8} required className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder={t('writtenPlaceholder')}></textarea>
-        </div>
-
-        <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-2">{t('audioLabel')}</h3>
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                  <button type="button" onClick={recordingStatus === 'recording' ? stopRecording : startRecording} className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border rounded-md text-sm font-semibold transition-all ${recordingStatus === 'recording' ? 'bg-red-100 border-red-500 text-red-600 hover:bg-red-200' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}>
-                    {recordingStatus === 'recording' ? <> <StopIcon /> {t('stopRecording')} </> : <> <RecordIcon /> {t('recordAudio')} </>}
-                  </button>
-                  <button type="button" onClick={() => audioFileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-slate-300 rounded-md text-sm font-semibold bg-white text-slate-700 hover:bg-slate-100 transition-colors">
-                    <UploadIcon /> {t('uploadAudio')}
-                  </button>
-                  <input type="file" ref={audioFileInputRef} onChange={handleAudioUpload} accept=".mp3,.wav" className="hidden"/>
-              </div>
-              {audioUrl && (
-                  <div className="bg-slate-100 p-3 rounded-md">
-                      <p className="text-sm font-medium text-slate-800 mb-2">{t('audioPreview')}:</p>
-                      <audio controls src={audioUrl} className="w-full"></audio>
-                  </div>
-              )}
-            </div>
-        </div>
-        
-        <div>
-          <h3 className="text-sm font-medium text-slate-700 mb-2">{t('imageLabel')}</h3>
-          <div className="space-y-4">
-              <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-slate-300 rounded-md text-sm font-semibold bg-white text-slate-700 hover:bg-slate-100 transition-colors">
-                <ImageIcon /> {t('uploadImage')}
+          <div className="p-5 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><RecordIcon /> {t('audioLabel')}</h3>
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={recordingStatus === 'recording' ? stopRecording : startRecording} 
+                className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all ${recordingStatus === 'recording' ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'bg-white border border-slate-200 shadow-sm'}`}
+              >
+                {recordingStatus === 'recording' ? "إيقاف" : "تسجيل صوتي"}
               </button>
-              <input type="file" ref={imageInputRef} onChange={handleImageUpload} accept="image/png, image/jpeg, image/gif" className="hidden"/>
-              {imageUrl && (
-                  <div className="bg-slate-100 p-3 rounded-md">
-                      <p className="text-sm font-medium text-slate-800 mb-2">{t('imagePreview')}:</p>
-                      <img src={imageUrl} alt="Image preview" className="rounded-md max-h-60 w-auto mx-auto"/>
-                  </div>
-              )}
+            </div>
+            {audioUrl && <audio controls src={audioUrl} className="mt-4 w-full h-10" />}
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-medium text-slate-700 mb-2">{t('consentLabel')}</h3>
-          <div className="space-y-3">
-              <div className="flex items-start">
-                  <input id="anonymously" type="checkbox" checked={publishAnonymously} onChange={(e) => setPublishAnonymously(e.target.checked)} className="h-4 w-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500 mt-0.5"/>
-                  <label htmlFor="anonymously" className="ms-3 text-sm text-slate-600">{t('publishAnonymously')}</label>
-              </div>
-              <div className="flex items-start">
-                  <input id="consent" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="h-4 w-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500 mt-0.5"/>
-                  <label htmlFor="consent" className="ms-3 text-sm text-slate-600">{t('consentCheckbox')}</label>
-              </div>
+        <div className="bg-sky-50/50 p-6 rounded-3xl border border-sky-100">
+          <h3 className="text-xs font-black text-sky-900 uppercase tracking-widest mb-4">{t('consentLabel')}</h3>
+          <div className="space-y-4">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={publishAnonymously} onChange={e => setPublishAnonymously(e.target.checked)} className="w-6 h-6 rounded-lg border-sky-200 text-sky-600 focus:ring-sky-500" />
+              <span className="text-sm text-sky-800 font-bold group-hover:text-sky-600 transition-colors">{t('publishAnonymously')}</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} className="w-6 h-6 rounded-lg border-sky-200 text-sky-600 focus:ring-sky-500" />
+              <span className="text-sm text-sky-800 font-black group-hover:text-sky-600 transition-colors">{t('consentCheckbox')}</span>
+            </label>
           </div>
         </div>
 
-        <div className="pt-4">
-          <button type="submit" disabled={!consent} className="w-full bg-sky-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-sky-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:bg-slate-400 disabled:cursor-not-allowed">
-            {t('submitTestimony')}
-          </button>
-        </div>
+        <button 
+          type="submit" 
+          disabled={!consent || isSubmitting}
+          className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-black text-lg hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-slate-200"
+        >
+          {isSubmitting ? "جاري الإرسال..." : t('submitTestimony')}
+        </button>
       </form>
     </div>
   );

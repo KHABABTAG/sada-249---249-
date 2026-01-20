@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { MOCK_TESTIMONIES } from '../constants';
+import type { Testimony } from '../types';
 import { StoryCard } from './StoryCard';
 import { ArchiveTable } from './ArchiveTable';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -9,21 +9,23 @@ import { MapPinIcon } from './icons/MapPinIcon';
 import { GridIcon } from './icons/GridIcon';
 import { TableIcon } from './icons/TableIcon';
 
-type ArchiveView = 'grid' | 'table';
+interface PublicArchiveProps {
+  testimonies: Testimony[];
+}
 
-const PublicArchive: React.FC = () => {
+const PublicArchive: React.FC<PublicArchiveProps> = ({ testimonies }) => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
-  const [viewMode, setViewMode] = useState<ArchiveView>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   const uniqueLocations = useMemo(() => {
-    const locations = new Set(MOCK_TESTIMONIES.map(t => t.location));
+    const locations = new Set(testimonies.map(t => t.location));
     return [t('allLocations'), ...Array.from(locations)];
-  }, [t]);
+  }, [testimonies, t]);
 
   const filteredTestimonies = useMemo(() => {
-    return MOCK_TESTIMONIES.filter(testimony => {
+    return testimonies.filter(testimony => {
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
         testimony.title.toLowerCase().includes(searchLower) ||
@@ -35,39 +37,37 @@ const PublicArchive: React.FC = () => {
 
       return matchesSearch && matchesLocation;
     });
-  }, [searchQuery, locationFilter, t]);
+  }, [searchQuery, locationFilter, testimonies, t]);
 
   return (
-    <div>
-      <div className="text-center mb-10">
-        <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">{t('archiveTitle')}</h2>
-        <p className="text-slate-600 mt-2 max-w-2xl mx-auto">{t('archiveSubtitle')}</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold text-slate-900 mb-4">{t('archiveTitle')}</h2>
+        <p className="text-slate-600 max-w-2xl mx-auto text-lg">{t('archiveSubtitle')}</p>
       </div>
 
-      <div className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row gap-4">
-          <div className="flex-grow p-4 bg-white rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2 relative">
-                  <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
+      <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row gap-4 items-center">
+          <div className="flex-grow w-full bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-3">
+              <div className="flex-grow relative">
+                  <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none">
                       <SearchIcon />
                   </div>
                   <input
                       type="search"
-                      id="search"
                       placeholder={t('searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full ps-10 pe-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                      className="w-full ps-11 pe-4 py-3 border-none rounded-xl focus:ring-0 outline-none text-slate-700 bg-slate-50/50"
                   />
               </div>
-              <div className="relative">
-                  <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
+              <div className="md:w-64 relative">
+                  <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none">
                       <MapPinIcon />
                   </div>
                   <select
-                      id="location"
                       value={locationFilter}
                       onChange={(e) => setLocationFilter(e.target.value)}
-                      className="w-full ps-10 pe-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                      className="w-full ps-11 pe-4 py-3 border-none rounded-xl focus:ring-0 outline-none text-slate-700 bg-slate-50/50 appearance-none"
                   >
                       {uniqueLocations.map(loc => (
                           <option key={loc} value={loc}>{loc}</option>
@@ -76,18 +76,16 @@ const PublicArchive: React.FC = () => {
               </div>
           </div>
 
-          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200 self-center">
+          <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200">
               <button 
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-sky-100 text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}
-                title={t('gridView')}
+                className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
               >
                   <GridIcon />
               </button>
               <button 
                 onClick={() => setViewMode('table')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'table' ? 'bg-sky-100 text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}
-                title={t('tableView')}
+                className={`p-2.5 rounded-xl transition-all ${viewMode === 'table' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
               >
                   <TableIcon />
               </button>
@@ -96,7 +94,7 @@ const PublicArchive: React.FC = () => {
       
       {filteredTestimonies.length > 0 ? (
         viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredTestimonies.map(testimony => (
               <StoryCard key={testimony.id} testimony={testimony} />
             ))}
@@ -105,9 +103,12 @@ const PublicArchive: React.FC = () => {
           <ArchiveTable testimonies={filteredTestimonies} />
         )
       ) : (
-        <div className="text-center py-16 bg-white rounded-lg shadow-sm border border-slate-200">
-            <h3 className="text-xl font-semibold text-slate-800">{t('noStoriesFound')}</h3>
-            <p className="text-slate-500 mt-2">{t('noStoriesSubtitle')}</p>
+        <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+            <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <SearchIcon />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-800">{t('noStoriesFound')}</h3>
+            <p className="text-slate-500 mt-2">Try adjusting your search or filters.</p>
         </div>
       )}
     </div>
