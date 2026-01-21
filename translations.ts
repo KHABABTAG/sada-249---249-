@@ -142,5 +142,6 @@ export const translations: Translations = {
   loc_alfashir: { en: "Al Fashir", ar: "الفاشر" },
   loc_gezira: { en: "Gezira", ar: "الجزيرة" },
   loc_khartoum: { en: "Khartoum", ar: "الخرطوم" },
+  loc_other: { en: "Other", ar: "أخرى" },
   select_location: { en: "Select Location", ar: "اختر الموقع" },
 };

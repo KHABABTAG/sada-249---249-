@@ -134,6 +134,7 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ onAdd }) => {
                 <option value={t('loc_alfashir')}>{t('loc_alfashir')}</option>
                 <option value={t('loc_gezira')}>{t('loc_gezira')}</option>
                 <option value={t('loc_khartoum')}>{t('loc_khartoum')}</option>
+                <option value={t('loc_other')}>{t('loc_other')}</option>
               </select>
               <div className="absolute inset-y-0 end-4 flex items-center pointer-events-none text-slate-500">
                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

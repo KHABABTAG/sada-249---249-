@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { Testimony } from '../types';
 import { StoryCard } from './StoryCard';
@@ -20,7 +21,12 @@ const PublicArchive: React.FC<PublicArchiveProps> = ({ testimonies }) => {
 
   const uniqueLocations = useMemo(() => {
     // Force these specific locations to appear in the filter list in order
-    const forcedLocations = [t('loc_alfashir'), t('loc_gezira'), t('loc_khartoum')];
+    const forcedLocations = [
+        t('loc_alfashir'), 
+        t('loc_gezira'), 
+        t('loc_khartoum'),
+        t('loc_other')
+    ];
     
     // Get other locations from data that are not in the forced list (legacy or other)
     const dataLocations = new Set<string>(testimonies.map(t => t.location));
