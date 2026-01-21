@@ -20,8 +20,14 @@ const PublicArchive: React.FC<PublicArchiveProps> = ({ testimonies }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   const uniqueLocations = useMemo(() => {
-    const locations = new Set(testimonies.map(t => t.location));
-    return [t('allLocations'), ...Array.from(locations)];
+    // Force these specific locations to appear in the filter list in order
+    const forcedLocations = [t('loc_alfashir'), t('loc_gezira'), t('loc_khartoum')];
+    
+    // Get other locations from data that are not in the forced list (legacy or other)
+    const dataLocations = new Set(testimonies.map(t => t.location));
+    const otherLocations = Array.from(dataLocations).filter(loc => !forcedLocations.includes(loc));
+
+    return [t('allLocations'), ...forcedLocations, ...otherLocations];
   }, [testimonies, t]);
 
   const filteredTestimonies = useMemo(() => {
@@ -67,12 +73,17 @@ const PublicArchive: React.FC<PublicArchiveProps> = ({ testimonies }) => {
                   <select
                       value={locationFilter}
                       onChange={(e) => setLocationFilter(e.target.value)}
-                      className="w-full ps-11 pe-4 py-3 border-none rounded-xl focus:ring-0 outline-none text-slate-700 bg-slate-50/50 appearance-none"
+                      className="w-full ps-11 pe-4 py-3 border-none rounded-xl focus:ring-0 outline-none text-slate-700 bg-slate-50/50 appearance-none cursor-pointer"
                   >
                       {uniqueLocations.map(loc => (
                           <option key={loc} value={loc}>{loc}</option>
                       ))}
                   </select>
+                  <div className="absolute inset-y-0 end-4 flex items-center pointer-events-none text-slate-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                  </div>
               </div>
           </div>
 

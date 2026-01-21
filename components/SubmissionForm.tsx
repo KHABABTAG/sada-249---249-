@@ -5,9 +5,10 @@ import { RecordIcon } from './icons/RecordIcon';
 import { StopIcon } from './icons/StopIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { ImageIcon } from './icons/ImageIcon';
+import { TestimonySubmission } from '../types';
 
 interface SubmissionFormProps {
-  onAdd: (testimony: any) => void;
+  onAdd: (testimony: TestimonySubmission) => Promise<void>;
 }
 
 const SubmissionForm: React.FC<SubmissionFormProps> = ({ onAdd }) => {
@@ -28,6 +29,10 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ onAdd }) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  
+  // New refs to hold raw data for upload
+  const imageFileRef = useRef<File | undefined>(undefined);
+  const audioBlobRef = useRef<Blob | undefined>(undefined);
 
   const startRecording = useCallback(async () => {
     try {
@@ -37,6 +42,7 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ onAdd }) => {
       mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        audioBlobRef.current = audioBlob;
         setAudioUrl(URL.createObjectURL(audioBlob));
         stream.getTracks().forEach(track => track.stop());
       };
@@ -54,33 +60,47 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ onAdd }) => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setImageUrl(URL.createObjectURL(file));
+    if (file) {
+      imageFileRef.current = file;
+      setImageUrl(URL.createObjectURL(file));
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!consent) return;
     
     setIsSubmitting(true);
     
-    setTimeout(() => {
-      onAdd({
+    try {
+      await onAdd({
         title: title || "Untitled Testimony",
         event,
         date,
         location,
         writtenText: testimonyText,
         author: publishAnonymously ? t('status_anonymous') : "Public Submitter",
+        imageFile: imageFileRef.current,
+        audioBlob: audioBlobRef.current,
+        // We keep these for UI optimisim if needed, but the backend handles storage
         imageUrl: imageUrl || undefined,
         audioUrl: audioUrl || undefined,
       });
       
-      setIsSubmitting(false);
       alert(t('submissionSuccess'));
       
+      // Reset Form
       setTitle(''); setEvent(''); setDate(''); setLocation(''); setTestimonyText('');
       setConsent(false); setAudioUrl(null); setImageUrl(null); setRecordingStatus('idle');
-    }, 1500);
+      imageFileRef.current = undefined;
+      audioBlobRef.current = undefined;
+      if(imageInputRef.current) imageInputRef.current.value = '';
+
+    } catch (error) {
+      alert("Error submitting testimony. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -103,7 +123,24 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({ onAdd }) => {
           </div>
           <div>
             <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('locationLabel')}</label>
-            <input type="text" required value={location} onChange={e => setLocation(e.target.value)} className="w-full px-4 py-4 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all bg-slate-50 text-slate-900 font-bold" />
+            <div className="relative">
+              <select 
+                required 
+                value={location} 
+                onChange={e => setLocation(e.target.value)} 
+                className="w-full px-4 py-4 rounded-2xl border border-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all bg-slate-50 text-slate-900 font-bold appearance-none cursor-pointer"
+              >
+                <option value="">{t('select_location')}</option>
+                <option value={t('loc_alfashir')}>{t('loc_alfashir')}</option>
+                <option value={t('loc_gezira')}>{t('loc_gezira')}</option>
+                <option value={t('loc_khartoum')}>{t('loc_khartoum')}</option>
+              </select>
+              <div className="absolute inset-y-0 end-4 flex items-center pointer-events-none text-slate-500">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                 </svg>
+              </div>
+            </div>
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t('dateLabel')}</label>

@@ -136,5 +136,11 @@ export const translations: Translations = {
   action_delete: { en: "Delete", ar: "حذف" },
   action_view: { en: "View", ar: "عرض" },
   modal_close: { en: "Close", ar: "إغلاق" },
-  confirm_delete: { en: "Confirm Delete?", ar: "هل أنت متأكد من الحذف؟" }
+  confirm_delete: { en: "Confirm Delete?", ar: "هل أنت متأكد من الحذف؟" },
+  
+  // Locations
+  loc_alfashir: { en: "Al Fashir", ar: "الفاشر" },
+  loc_gezira: { en: "Gezira", ar: "الجزيرة" },
+  loc_khartoum: { en: "Khartoum", ar: "الخرطوم" },
+  select_location: { en: "Select Location", ar: "اختر الموقع" },
 };

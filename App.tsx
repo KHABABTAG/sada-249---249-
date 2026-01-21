@@ -7,19 +7,33 @@ import PublicArchive from './components/PublicArchive';
 import AdminDashboard from './components/AdminDashboard';
 import Home from './components/Home';
 import { LanguageProvider } from './contexts/LanguageContext';
-import type { Testimony } from './types';
+import type { Testimony, TestimonySubmission } from './types';
 import { HomeIcon } from './components/icons/HomeIcon';
 import { PlusCircleIcon } from './components/icons/PlusCircleIcon';
 import { BookOpenIcon } from './components/icons/BookOpenIcon';
+import { api } from './services/api';
 
 export type View = 'home' | 'form' | 'archive' | 'admin';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
-  // Initializing with an empty array for production readiness
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Robust Hash Routing for Amplify/S3 Static Hosting
+  // Load data from MySQL API
+  const loadTestimonies = useCallback(async () => {
+    setLoading(true);
+    const data = await api.getTestimonies();
+    setTestimonies(data);
+    setLoading(false);
+  }, []);
+
+  // Initial Fetch
+  useEffect(() => {
+    loadTestimonies();
+  }, [loadTestimonies]);
+
+  // Robust Hash Routing
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
@@ -41,23 +55,38 @@ const App: React.FC = () => {
     setCurrentView(view);
     window.location.hash = view;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    // Refresh data when navigating to archive or admin
+    if (view === 'archive' || view === 'admin') {
+      loadTestimonies();
+    }
+  }, [loadTestimonies]);
 
-  const addTestimony = (newTestimony: Omit<Testimony, 'id' | 'status'>) => {
-    const testimony: Testimony = {
-      ...newTestimony,
-      id: Date.now(),
-      status: 'pending'
-    };
-    setTestimonies(prev => [testimony, ...prev]);
+  const addTestimony = async (newTestimony: TestimonySubmission) => {
+    const success = await api.createTestimony(newTestimony);
+    if (success) {
+      await loadTestimonies(); // Reload data from MySQL
+    }
+    return Promise.resolve();
   };
 
-  const updateTestimonyStatus = (id: number, status: Testimony['status']) => {
-    setTestimonies(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+  const updateTestimonyStatus = async (id: number, status: 'approved' | 'rejected') => {
+    const success = await api.updateStatus(id, status);
+    if (success) {
+       // Optimistic update
+       setTestimonies(prev => prev.map(t => t.id === id ? { ...t, status: status === 'approved' ? 'approved' : 'rejected' } : t));
+    } else {
+        alert("Failed to update status in database");
+    }
   };
 
-  const deleteTestimony = (id: number) => {
-    setTestimonies(prev => prev.filter(t => t.id !== id));
+  const deleteTestimony = async (id: number) => {
+    if(!window.confirm("Are you sure you want to delete this from the database?")) return;
+    const success = await api.deleteTestimony(id);
+    if (success) {
+      setTestimonies(prev => prev.filter(t => t.id !== id));
+    } else {
+        alert("Failed to delete from database");
+    }
   };
 
   return (
@@ -68,11 +97,16 @@ const App: React.FC = () => {
         <main className="flex-grow container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-5xl mx-auto">
             {currentView === 'home' && <Home onNavigate={navigateTo} />}
+            
             {currentView === 'form' && <SubmissionForm onAdd={addTestimony} />}
+            
             {currentView === 'archive' && (
+              loading ? <div className="text-center py-20">Loading archive from MySQL...</div> :
               <PublicArchive testimonies={testimonies.filter(t => t.status === 'approved')} />
             )}
+            
             {currentView === 'admin' && (
+               loading ? <div className="text-center py-20">Loading dashboard...</div> :
               <AdminDashboard 
                 testimonies={testimonies} 
                 onUpdateStatus={updateTestimonyStatus} 
@@ -82,7 +116,6 @@ const App: React.FC = () => {
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation */}
         <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center py-3 px-6 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
           <button onClick={() => navigateTo('home')} className={`flex flex-col items-center gap-1 ${currentView === 'home' ? 'text-sky-600' : 'text-slate-400'}`}>
             <HomeIcon className="w-6 h-6" />
