@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import type { Testimony } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MegaphoneIcon } from './icons/MegaphoneIcon';
@@ -12,11 +13,17 @@ interface StoryCardProps {
 export const StoryCard: React.FC<StoryCardProps> = ({ testimony }) => {
   const { t } = useLanguage();
   const { title, event, date, location, writtenText, audioUrl, imageUrl } = testimony;
+  const [imageError, setImageError] = useState(false);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-      {imageUrl && (
-        <img src={imageUrl} alt={title} className="w-full h-40 object-cover" />
+      {imageUrl && !imageError && (
+        <img 
+          src={imageUrl} 
+          alt={title} 
+          className="w-full h-40 object-cover" 
+          onError={() => setImageError(true)}
+        />
       )}
       <div className="p-6 flex flex-col flex-grow">
         <div className="flex-grow">

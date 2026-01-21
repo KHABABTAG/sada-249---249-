@@ -34,13 +34,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ testimonies, onUpdateSt
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real production app, this would be handled via a secure backend.
-    // Default system access code for deployment.
     if (password === 'admin249') {
       setIsAuthenticated(true);
     } else {
       alert("Access Denied: Invalid Credentials.");
     }
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.style.display = 'none';
   };
 
   if (!isAuthenticated) {
@@ -165,10 +167,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ testimonies, onUpdateSt
                 <div><p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Author</p><p className="font-bold text-slate-900">{selectedTestimony.author}</p></div>
                 <div><p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Status</p><p className="font-black uppercase text-sky-600">{selectedTestimony.status}</p></div>
               </div>
-              {selectedTestimony.imageUrl && <img src={selectedTestimony.imageUrl} className="w-full rounded-[2rem] shadow-xl border-8 border-white" />}
+              
+              {selectedTestimony.imageUrl && (
+                <img 
+                  src={selectedTestimony.imageUrl} 
+                  className="w-full rounded-[2rem] shadow-xl border-8 border-white" 
+                  onError={handleImageError}
+                />
+              )}
+              
               <p className="text-xl text-slate-700 leading-relaxed font-medium ps-8 border-s-4 border-slate-200">
                 {selectedTestimony.writtenText}
               </p>
+              
               {selectedTestimony.audioUrl && (
                 <div className="bg-slate-900 p-6 rounded-[2rem] shadow-inner">
                   <p className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Audio Recording</p>

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import type { Testimony } from '../types';
 import { StoryCard } from './StoryCard';
@@ -24,8 +23,8 @@ const PublicArchive: React.FC<PublicArchiveProps> = ({ testimonies }) => {
     const forcedLocations = [t('loc_alfashir'), t('loc_gezira'), t('loc_khartoum')];
     
     // Get other locations from data that are not in the forced list (legacy or other)
-    const dataLocations = new Set(testimonies.map(t => t.location));
-    const otherLocations = Array.from(dataLocations).filter(loc => !forcedLocations.includes(loc));
+    const dataLocations = new Set<string>(testimonies.map(t => t.location));
+    const otherLocations = Array.from(dataLocations).filter((loc: string) => !forcedLocations.includes(loc));
 
     return [t('allLocations'), ...forcedLocations, ...otherLocations];
   }, [testimonies, t]);

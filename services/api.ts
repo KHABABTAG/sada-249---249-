@@ -1,7 +1,26 @@
 
 import { Testimony, TestimonySubmission } from '../types';
 
-const API_URL = 'http://localhost:3000/api'; // عنوان السيرفر الخلفي
+const BASE_URL = 'http://localhost:3000';
+const API_URL = `${BASE_URL}/api`;
+
+// دالة مساعدة لإصلاح الروابط (تتعامل مع مشاكل المسارات في ويندوز والروابط النسبية)
+const normalizeUrl = (path: string | undefined | null): string | undefined => {
+  if (!path) return undefined;
+  
+  // استبدال الشرطة المائلة العكسية (Windows style) بالعادية
+  const cleanPath = path.replace(/\\/g, '/');
+  
+  // إذا كان الرابط كاملاً، نعيده كما هو (بعد إصلاح الشرطات)
+  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+    return cleanPath;
+  }
+  
+  // إذا كان الرابط نسبياً، نضيف عنوان السيرفر
+  // مثال: uploads/image.jpg -> http://localhost:3000/uploads/image.jpg
+  const relativePath = cleanPath.startsWith('/') ? cleanPath.substring(1) : cleanPath;
+  return `${BASE_URL}/${relativePath}`;
+};
 
 export const api = {
   // جلب جميع الشهادات
@@ -9,7 +28,15 @@ export const api = {
     try {
       const response = await fetch(`${API_URL}/testimonies`);
       if (!response.ok) throw new Error('Failed to fetch testimonies');
-      return await response.json();
+      
+      const data = await response.json();
+      
+      // معالجة البيانات وإصلاح الروابط قبل إرجاعها للتطبيق
+      return data.map((item: any) => ({
+        ...item,
+        imageUrl: normalizeUrl(item.imageUrl),
+        audioUrl: normalizeUrl(item.audioUrl)
+      }));
     } catch (error) {
       console.error('API Error:', error);
       return [];
@@ -26,14 +53,14 @@ export const api = {
     formData.append('writtenText', data.writtenText);
     formData.append('author', data.author);
     
-    // إضافة الملفات إذا وجدت
+    // تأكد من أن أسماء الحقول تطابق ما يتوقعه multer في السيرفر (image, audio)
     if (data.imageFile) formData.append('image', data.imageFile);
     if (data.audioBlob) formData.append('audio', data.audioBlob, 'recording.wav');
 
     try {
       const response = await fetch(`${API_URL}/testimonies`, {
         method: 'POST',
-        body: formData, // المتصفح سيضع الـ Content-Type تلقائياً
+        body: formData,
       });
       return response.ok;
     } catch (error) {
