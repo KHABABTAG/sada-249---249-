@@ -10,8 +10,8 @@ import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 
 interface AdminDashboardProps {
   testimonies: Testimony[];
-  onUpdateStatus: (id: number, status: Testimony['status']) => void;
-  onDelete: (id: number) => void;
+  onUpdateStatus: (id: string, status: Testimony['status']) => void;
+  onDelete: (id: string) => void;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ testimonies, onUpdateStatus, onDelete }) => {

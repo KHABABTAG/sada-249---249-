@@ -20,7 +20,7 @@ const App: React.FC = () => {
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Load data from MySQL API
+  // Load data
   const loadTestimonies = useCallback(async () => {
     setLoading(true);
     const data = await api.getTestimonies();
@@ -64,28 +64,28 @@ const App: React.FC = () => {
   const addTestimony = async (newTestimony: TestimonySubmission) => {
     const success = await api.createTestimony(newTestimony);
     if (success) {
-      await loadTestimonies(); // Reload data from MySQL
+      await loadTestimonies();
     }
     return Promise.resolve();
   };
 
-  const updateTestimonyStatus = async (id: number, status: 'approved' | 'rejected') => {
+  const updateTestimonyStatus = async (id: string, status: 'approved' | 'rejected') => {
     const success = await api.updateStatus(id, status);
     if (success) {
        // Optimistic update
        setTestimonies(prev => prev.map(t => t.id === id ? { ...t, status: status === 'approved' ? 'approved' : 'rejected' } : t));
     } else {
-        alert("Failed to update status in database");
+        alert("Failed to update status");
     }
   };
 
-  const deleteTestimony = async (id: number) => {
-    if(!window.confirm("Are you sure you want to delete this from the database?")) return;
+  const deleteTestimony = async (id: string) => {
+    if(!window.confirm("Are you sure you want to delete this testimony?")) return;
     const success = await api.deleteTestimony(id);
     if (success) {
       setTestimonies(prev => prev.filter(t => t.id !== id));
     } else {
-        alert("Failed to delete from database");
+        alert("Failed to delete testimony");
     }
   };
 
@@ -101,7 +101,7 @@ const App: React.FC = () => {
             {currentView === 'form' && <SubmissionForm onAdd={addTestimony} />}
             
             {currentView === 'archive' && (
-              loading ? <div className="text-center py-20">Loading archive from MySQL...</div> :
+              loading ? <div className="text-center py-20">Loading archive...</div> :
               <PublicArchive testimonies={testimonies.filter(t => t.status === 'approved')} />
             )}
             

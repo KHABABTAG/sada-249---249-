@@ -1,13 +1,13 @@
 
 export interface Testimony {
-  id: number;
+  id: string; // تم التغيير من number إلى string لتناسب DynamoDB/Amplify
   title: string;
   event: string;
   date: string;
   location: string;
   writtenText: string;
-  audioUrl?: string; // URL قادم من السيرفر
-  imageUrl?: string; // URL قادم من السيرفر
+  audioUrl?: string; 
+  imageUrl?: string; 
   status: 'approved' | 'pending' | 'rejected';
   author: string;
   createdAt?: string;
@@ -20,8 +20,8 @@ export interface TestimonySubmission {
   location: string;
   writtenText: string;
   author: string;
-  imageFile?: File; // الملف الخام للرفع
-  audioBlob?: Blob; // الملف الصوتي الخام للرفع
-  audioUrl?: string; // للمعاينة فقط
-  imageUrl?: string; // للمعاينة فقط
+  imageFile?: File; 
+  audioBlob?: Blob; 
+  audioUrl?: string; 
+  imageUrl?: string; 
 }
